@@ -9,6 +9,7 @@ var { User } = require('./models/user');
 const { ObjectID } = require('mongodb');
 
 var app = express();
+const port = process.env.PORT || 3000;
 
 app.use(bodyParser.json());
 
@@ -53,8 +54,34 @@ app.get('/todos/:id', (req, res) => {
 
 });
 
-app.listen(3000, () => {
-    console.log('Starting on port 3000');
+app.delete('/todos/:id', (req, res) => {
+    // get the id
+    var id = req.params.id;
+
+    // validate the id -> not valid ? return 404
+    if (!ObjectID.isValid(id)) {
+        return res.status(404).send('Sorry, an error was encountered, please check and ensure the id is correct.');
+    }
+
+    // remove todo by id
+    Todo.findByIdAndRemove('5f5f8f905689d3956fe4c67b').then((todo) => {
+            // success if no doc, send 404
+            if (!todo) {
+                return res.status(404).send('Really sorry could not find your todo');
+            }
+
+            // success if doc , send doc back with 200
+            res.status(200).send({ todo });
+
+        })
+        // error , error message with 400
+        .catch((e) => {
+            res.status(400).send('Sorry an error occured :', e);
+        });
+});
+
+app.listen(port, () => {
+    console.log(`Started up at port ${port}`);
 });
 
 module.exports = { app };
