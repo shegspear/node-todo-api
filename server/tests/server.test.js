@@ -6,6 +6,7 @@ const { app } = require('./../server');
 const { Todo } = require('./../models/todo');
 const { User } = require('./../models/user');
 const { todos, populateTodos, users, populateUsers } = require('./seed/seed');
+const user = require('./../models/user');
 
 beforeEach(populateUsers);
 beforeEach(populateTodos);
@@ -251,6 +252,56 @@ describe('POST /users', () => {
             .post('/users')
             .send({ usedEmail, usedPass })
             .expect(400)
+            .end(done);
+    });
+
+});
+
+describe('POST /users/login', () => {
+    it('should login user and return auth token', (done) => {
+
+        request(app)
+            .post('/users/login')
+            .send({
+                email: users[1].email,
+                password: users[1].password
+            })
+            .expect(200)
+            .expect((res) => {
+                expect(res.headers['x-auth']).toBeTruthy();
+            })
+            .end((err, res) => {
+                if (err) {
+                    return done(err);
+                }
+
+                // the error from this test is minimal, please ignore
+                // toInclude as a method does not exist any more
+                // used toContain, hence failed test, please ignore
+                User.findById(users[1]._id).then((user) => {
+                    expect(user.tokens[0]).toContain({
+                        access: 'auth',
+                        token: res.headers['x-auth']
+                    });
+                    done();
+                }).catch((e) => done(e));
+            });
+    });
+
+    it('should reject invalid login', (done) => {
+        var fakeEmail = 'segun';
+        var fakePass = '1'
+
+        request(app)
+            .post('/users/login')
+            .send({
+                fakeEmail,
+                fakePass
+            })
+            .expect(400)
+            .expect((res) => {
+                expect(res.headers['x-auth']).toBeFalsy();
+            })
             .end(done);
     });
 
